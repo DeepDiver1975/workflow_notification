@@ -69,12 +69,15 @@ class BackgroundJob extends \OC\BackgroundJob\QueuedJob {
 	 * @param mixed $argument
 	 */
 	protected function run($argument) {
-		if ($argument['action']['trigger'] === 'create' && $argument['action']['target'] === 'owner') {
-			$this->notifyOwnerOnCreate($argument);
+		if ($argument['action']['target'] === 'owner') {
+			$this->notifyOwner($argument);
 		}
 	}
 
-	public function notifyOwnerOnCreate($arguments) {
+	/**
+	 * @param array $arguments
+	 */
+	public function notifyOwner(array $arguments) {
 		$path = explode('/', $arguments['path'], 4);
 
 		if (!isset($path[3])) {
@@ -101,26 +104,44 @@ class BackgroundJob extends \OC\BackgroundJob\QueuedJob {
 			return;
 		}
 
-		$this->setUpUserFilesystem($owner->getUID());
-		$view = $this->createView($owner->getUID());
-
-		if (!$view->file_exists($path[3])) {
-			// File does not exist anymore
-			return;
-		}
-
 		$defaultLanguage = $this->config->getSystemValue('default_language', 'en');
 		$userLanguage = $this->config->getUserValue($owner->getUID(), 'core', 'lang', $defaultLanguage);
-
 		$l = $this->l10nFactory->get('workflow_notification', $userLanguage);
 
+		switch ($arguments['action']['trigger']) {
+			case 'createFile':
+				$this->setUpUserFilesystem($owner->getUID());
+				$view = $this->createView($owner->getUID());
+
+				if (!$view->file_exists($path[3])) {
+					// File does not exist anymore
+					return;
+				}
+
+				$subject = $l->t('File created');
+				$message = $l->t('File "%1$s" has been uploaded by %2$s', [
+					$path[3],
+					$user->getDisplayName(),
+				]);
+			break;
+
+			case 'deleteFile':
+				$subject = $l->t('File deleted');
+				$message = $l->t('File "%1$s" has been deleted by %2$s', [
+					$path[3],
+					$user->getDisplayName(),
+				]);
+			break;
+
+			default:
+				// Wrong trigger
+				return;
+		}
+
 		$mail = $this->mailer->createMessage();
-		$mail->setSubject($l->t('File created'));
+		$mail->setSubject($subject);
 		$mail->setTo([$owner->getEMailAddress() => $owner->getDisplayName()]);
-		$mail->setPlainBody($l->t('File "%1$s" has been uploaded by %2$s', [
-			$path[3],
-			$user->getDisplayName(),
-		]));
+		$mail->setPlainBody($message);
 		$this->mailer->send($mail);
 	}
 

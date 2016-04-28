@@ -31,6 +31,15 @@ use OCP\L10N\IFactory;
 
 class SendEmailPlugin {
 
+	protected $triggers = [
+		'createFile',
+		'deleteFile',
+	];
+
+	protected $targets = [
+		'owner',
+	];
+
 	/** @var IJobList */
 	protected $jobList;
 
@@ -55,17 +64,22 @@ class SendEmailPlugin {
 
 	/**
 	 * @param FileActionInterface $event
-	 * @param string $eventName
+	 * @param string $eventTrigger
 	 */
-	public function listen(FileActionInterface $event, $eventName) {
+	public function fileAction(FileActionInterface $event, $eventTrigger) {
 		$flow = $event->getFlow();
 		if ($flow->getType() !== 'workflow_notification') {
 			return;
 		}
 
+		$action = $flow->getActions();
+		if ($eventTrigger !== 'OCA\Workflow\Engine::' . $action['trigger']) {
+			return;
+		}
+
 		$data = [
 			'path' => $event->getPath(),
-			'action' => $flow->getActions(),
+			'action' => $action,
 			'fileId' => null,
 			'uid' => null,
 		];
@@ -104,12 +118,12 @@ class SendEmailPlugin {
 
 		$actions = $flow->getActions();
 
-		if (!is_array($actions) || !isset($actions['trigger']) || !in_array($actions['trigger'], ['create'])) {
+		if (!is_array($actions) || !isset($actions['trigger']) || !in_array($actions['trigger'], $this->triggers)) {
 			$l = $this->l10nFactory->get('workflow_notification');
 			throw new \OutOfBoundsException((string) $l->t('No valid notification trigger given'), 3);
 		}
 
-		if (!is_array($actions) || !isset($actions['target']) || !in_array($actions['target'], ['owner'])) {
+		if (!is_array($actions) || !isset($actions['target']) || !in_array($actions['target'], $this->targets)) {
 			$l = $this->l10nFactory->get('workflow_notification');
 			throw new \OutOfBoundsException((string) $l->t('No valid notification target given'), 3);
 		}

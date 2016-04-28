@@ -20,7 +20,8 @@
 	OCA.Workflow_Notification.SendEmailPlugin = {
 
 		_triggers: {
-			create: t('workflow_notification', 'File creation')
+			createFile: t('workflow_notification', 'File creation'),
+			deleteFile: t('workflow_notification', 'File deletion')
 		},
 
 		_targets: {
@@ -59,7 +60,7 @@
 				return;
 			}
 
-			var trigger = actions.trigger || 'create';
+			var trigger = actions.trigger || 'createFile';
 			var target = actions.target || 'owner';
 
 			$actions.html(t('workflow_notification', 'Send email notification on {trigger} to {target}', {
@@ -80,7 +81,7 @@
 				return;
 			}
 
-			var trigger = actions.trigger || 'create';
+			var trigger = actions.trigger || 'createFile';
 			var target = actions.target || 'owner';
 
 			var $trigger = $('<select>').addClass('notification-trigger');

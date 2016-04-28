@@ -19,23 +19,5 @@
  *
  */
 
-use OCA\Workflow\PublicAPI\Event\CollectTypesInterface;
-use OCA\Workflow\PublicAPI\Event\FileActionInterface;
-
-\OC::$server->getEventDispatcher()->addListener('OCA\Workflow\Engine::' . FileActionInterface::FILE_CREATE, function(FileActionInterface $event, $eventName) {
-	$app = new \OCP\AppFramework\App('workflow_notification');
-	/** @var \OCA\Workflow_Notification\SendEmailPlugin $plugin */
-	$plugin = $app->getContainer()->query('OCA\Workflow_Notification\SendEmailPlugin');
-	$plugin->listen($event, $eventName);
-});
-
-\OC::$server->getEventDispatcher()->addListener('OCA\Workflow\Engine::' . CollectTypesInterface::TYPES_COLLECT, function(CollectTypesInterface $event) {
-	$app = new \OCP\AppFramework\App('workflow_notification');
-	/** @var \OCA\Workflow_Notification\SendEmailPlugin $plugin */
-	$plugin = $app->getContainer()->query('OCA\Workflow_Notification\SendEmailPlugin');
-	$plugin->collectTypes($event);
-});
-
-\OC::$server->getEventDispatcher()->addListener('OC\Settings\Admin::loadAdditionalScripts', function() {
-	\OCP\Util::addScript('workflow_notification', 'sendemailplugin');
-});
+$app = new \OCA\Workflow_Notification\AppInfo\Application();
+$app->registerListeners();
